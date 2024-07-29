@@ -51,3 +51,5 @@ Diabetes appears to occur in the oldest age groups.
 ## Discussion
 
 For the modelling page, I am going to try to fit models using BMI, Age, Veggies, and Alcohol as predictors for the the response. Since alcohol already fit diabetes so well, hopefully the other three will improve the fit. Since type 2 diabetes takes time to manifest, age should assist in that prediction. Lastly, someone who consumes vegetables will be at less risk, so there will be a "negative" term in the model.
+
+### [Modelling Page](https://jmposlus.github.io/ST558_Final_Project/modelling.html)

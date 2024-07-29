@@ -1,0 +1,49 @@
+---
+title: "EDA"
+format: html
+editor: visual
+---
+
+## Diabetic Data Introduction
+
+```{r}
+main<- read.csv("C:/Users/James P/Downloads/diabetes_binary_health_indicators_BRFSS2015.csv")
+head(main)
+```
+
+Above is the head of the data set we are working with. This is a diabetes health indicator set. We will be using the binary Diabetes variable as our response. To note, the site from which the data set originates, [kaggle](https://www.kaggle.com/datasets/alexteboul/diabetes-health-indicators-dataset/), fails to mention whether this is type 1 or type 2 diabetes. The site also mentions that diabetes increases risk of stroke, heart attack, and high blood pressure, so these variables will not be considered as predictors.
+
+```{r, echo = F}
+library(caret)
+library(dplyr) #Need to clean this up a bit
+main[,-5]<- lapply(main[,-5], factor)
+```
+
+## Analysis
+
+Firstly, for the predictors with two levels, I will borrow the confusion matrix from the caret package to check how well they align for the modelling.
+
+```{r}
+confusionMatrix(main$Diabetes_binary, main$HvyAlcoholConsump)
+```
+
+We can see for heavy alcohol consumption, with a 1 for consumption and 0 for non-heavy consumption, that there is an 85% accuracy in predicting diabetes.
+
+```{r}
+confusionMatrix(main$Diabetes_binary, main$Veggies)
+```
+
+For veggies, we can see that most people who eat veggies do not have diabetes. This negative information could be useful for the model.
+
+```{r}
+library(ggplot2)
+ggplot(main, aes(x = BMI, color = Diabetes_binary)) + geom_bar()
+```
+
+BMI, or Body Mass Index, may not be a great indicator of diabetes, but the tail certainly seems to be more blue than orange.
+
+```{r}
+ggplot(main, aes(x = Age, color = Diabetes_binary)) + geom_bar()
+```
+
+Diabetes appears to occur in the oldest age groups.

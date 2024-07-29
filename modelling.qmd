@@ -1,0 +1,142 @@
+---
+title: "Modelling"
+author: "James Poslusny"
+format: html
+editor: visual
+---
+
+## Modelling File
+
+This page takes the Diabetes dataset and attempts to fit several models to it.
+
+## Introduction
+
+```{r, echo = F}
+main<- read.csv("C:/Users/James P/Downloads/diabetes_binary_health_indicators_BRFSS2015.csv")
+library(caret)
+library(dplyr) #Need to clean this up a bit
+main[,-5]<- lapply(main[,-5], factor)
+head(main)
+```
+
+Above is the head of the diabetes data. Of note, it is unclear whether the diabetes studied is type 1 or type 2. Previously, we discovered that the heavy consumption of alcohol, entered here as 1 for heavy and 0 for not, has an 85% accuracy for predicting diabetes. From there, we'll use age, entered in groups with 13 representing the oldest patients, and 1 being the youngest. (The youngest patient is age 18). BMI, or Body Mass Index, will also be used, and as well as a binary for the consumption of enough vegetables.
+
+We will be comparing three different model types: Logistic Regression, Decision Trees, and Random Forest. The Logistic Regression model is useful for binary response variables as it allows for a "traditional" approach to regression while also handling the response. The decision tree seeks to model with the best accuracy, literately choosing results which better the prediction. Random Forest is a decision tree on steroids, which also seeks to predict the best model.
+
+We will be using log loss as the metric for choosing the best model in each of the three categories. It's a logarithmic way of keeping track how well a model matches its predictions to actual outcomes. Lower scores are better.
+
+### Logit Model
+
+```{r}
+#First split into training and test sets
+set.seed(1701)
+fortrain<- createDataPartition(y = main$Diabetes_binary, p = 0.7, list = F)
+train<- main[fortrain,]
+test<- main[-fortrain,]
+
+#set the control
+control<- trainControl(method = "repeatedCV", number = 5, repeats = 1)
+
+#First model
+logit1<- train(Diabetes_binary ~ HvyAlcoholConsump + Age, data = train,
+               method = "glm",
+               trControl = control,
+               metric = "logLoss")
+l1pred<- predict(logit1, test)
+confusionMatrix(test$Diabetes_binary, l1pred)
+
+#Second model
+logit2<- train(Diabetes_binary ~ HvyAlcoholConsump + Age + BMI + Veggies, data = train,
+               method = "glm",
+               trControl = control,
+               metric = "logLoss")
+l2pred<- predict(logit2, test)
+confusionMatrix(test$Diabetes_binary, l2pred)
+
+#Third model
+logit3<- train(Diabetes_binary ~ HvyAlcoholConsump, data = train,
+               method = "glm",
+               trControl = control,
+               metric = "logLoss")
+l3pred<- predict(logit3, test)
+confusionMatrix(test$Diabetes_binary, l3pred)
+```
+
+In this case, the simplest model, with the alcohol use as the only predictor, was the best fitting. Moving on now to the decision tree models.
+
+### Decision Tree Models
+
+```{r}
+#First Model
+dd1<- train(Diabetes_binary ~ HvyAlcoholConsump + Age, data = train,
+               method = "rpart",
+               trControl = control,
+               metric = "logLoss",
+            cp = 0.1)
+dd1pred<- predict(dd1, test)
+confusionMatrix(test$Diabetes_binary, dd1pred)
+
+#Second Model
+dd2<- train(Diabetes_binary ~ HvyAlcoholConsump + Age + BMI + Veggies, data = train,
+               method = "rpart",
+               trControl = control,
+               metric = "logLoss",
+            cp = 0.1)
+dd2pred<- predict(dd2, test)
+confusionMatrix(test$Diabetes_binary, dd2pred)
+
+#Third Model
+dd3<- train(Diabetes_binary ~ HvyAlcoholConsump, data = train,
+               method = "rpart",
+               trControl = control,
+               metric = "logLoss",
+            cp = 0.1)
+dd3pred<- predict(dd1, test)
+confusionMatrix(test$Diabetes_binary, dd3pred)
+```
+
+Again, the simplest model is the best here. Now for Random Forest.
+
+### Random Forest
+
+```{r}
+#First Model
+library(randomForest)
+controlrf<- trainControl(method = "repeatedCV", number = 5, repeats = 1, search = "grid")
+mtry<- sqrt(ncol(train))
+tunegrid<- expand.grid(.mtry = 1) 
+model_grid <- expand.grid(
+   mtry = 1                                  
+   ,splitrule = "gini"
+   ,min.node.size = 10
+)
+rf1<- train(Diabetes_binary ~ HvyAlcoholConsump, data = train,
+               method = "ranger",
+               trControl = controlrf,
+               metric = "logLoss",
+            tuneGrid = model_grid)
+rf1pred<- predict(rf1, test)
+confusionMatrix(test$Diabetes_binary, rf1pred)
+
+#Second Model
+rf2<- train(Diabetes_binary ~ HvyAlcoholConsump + Age + BMI + Veggies, data = train,
+               method = "ranger",
+               trControl = controlrf,
+               metric = "logLoss",
+            tuneGrid = model_grid)
+rf2pred<- predict(rf2, test)
+confusionMatrix(test$Diabetes_binary, rf2pred)
+
+#Last Model
+rf3<- train(Diabetes_binary ~ HvyAlcoholConsump + Age, data = train,
+               method = "ranger",
+               trControl = controlrf,
+               metric = "logLoss",
+            tuneGrid = model_grid)
+rf3pred<- predict(rf3, test)
+confusionMatrix(test$Diabetes_binary, rf3pred)
+
+
+```
+
+Once again, the simplest model wins out. For all three model types, the best model is simply the one with the first predictor, alcohol usage.
